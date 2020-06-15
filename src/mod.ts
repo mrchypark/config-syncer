@@ -1,7 +1,6 @@
-import { exec } from "./deps.ts";
-import ky from 'https://deno.land/x/ky/index.js';
+import { exec, soxa } from "./deps.ts";
 
-const parsed = await ky.get('https://httpbin.org/get').json();
+const parsed = await soxa.get('https://httpbin.org/get');
 console.log(parsed)
 
 const tem = ["tems","tes"]
