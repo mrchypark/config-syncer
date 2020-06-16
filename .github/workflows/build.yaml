@@ -1,12 +1,16 @@
 name: Publish Docker
 on: [push, release]
 jobs:
-  job1:
+  build-and-publish-tag:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') # Running this job only for tags
+
     steps:
-      - name: Build, Tag, Push
-        uses: mattdavis0351/actions/docker-gpr@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          image-name: syncer
-          dockerfile-location: .
+    - uses: actions/checkout@v2
+
+    - name: Build and Publish Tag Docker image
+      uses: VaultVulp/gp-docker-action@1.1.6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }} # Provide GITHUB_TOKEN to login into the GitHub Packages
+        image-name: syncer # Provide only Docker image name
+        extract-git-tag: true #
