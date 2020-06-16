@@ -1,4 +1,4 @@
-import { exec, soxa, encode, cron } from "./deps.ts";
+import { exec, soxa, encode, cron, format } from "./deps.ts";
 
 const orgs = Deno.env.get("ORGS");
 const proj = Deno.env.get("PROJECT");
@@ -14,14 +14,17 @@ const vg_config = {
   },
 };
 
+console.log("cron schedule : " + schedule)
 
-cron(schedule, () => {
+cron(schedule, async () => {
+  console.log("job Start: " + format(Date.now(), ))
   let parsed = await soxa.get(
     `_apis/distributedtask/variablegroups?api-version=5.1-preview.1`,
     vg_config
   );
-  
-  parsed.data.value
+
+  if (parsed.status == 200) {
+    parsed.data.value
     .filter((val: any) => val.name.includes(`${env_name}`))
     .map(
       (val: any) =>
@@ -38,4 +41,8 @@ cron(schedule, () => {
     .map(async (val: string) => {
       console.log(await exec(`bash -c "${val} | kubectl apply -f -"`));
     });
-}
+  } else {
+    console.log("somthing wrong: ")
+    console.log(parsed)
+  }
+})

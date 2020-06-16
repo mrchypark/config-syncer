@@ -1,0 +1,22 @@
+apiVersion: skaffold/v2beta5
+kind: Config
+metadata:
+  name: syncer
+build:
+  artifacts:
+  - image: mrchypark/syncer
+deploy:
+  kubectl:
+    manifests:
+    - examples/deployment.yaml
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+      - image: mrchypark/syncer
+        sync:
+          manual:
+          - src: 'src/*'
+            dest: .
