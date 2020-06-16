@@ -21,7 +21,7 @@ const parsed = await soxa.get(
 );
 
 parsed.data.value
-  .filter((val: any) => val.name.includes(`drone`))
+  .filter((val: any) => val.name.includes(`${env_name}`))
   .map(
     (val: any) =>
       `kubectl create configmap ${val.name.replace(
