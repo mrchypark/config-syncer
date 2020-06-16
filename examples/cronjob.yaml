@@ -1,0 +1,28 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: syncer
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: "Forbid"
+  failedJobsHistoryLimit: 2
+  startingDeadlineSeconds: 30
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 40
+      template:
+        spec:
+          containers:
+            - name: syncer
+              image: mrchypark/syncer:0.0.2
+              env:
+                - name: ORGS
+                  value: "<your organization name on azure devops>"
+                - name: PROJECT
+                  value: "<your project name on azure devops>"
+                - name: KEY
+                  value: "<PAT key have read variable group permition>"
+                - name: ENV_NAME
+                  value: "dev"
+          restartPolicy: Never
