@@ -15,9 +15,4 @@ RUN deno cache deps.ts
 COPY ./src /app
 RUN deno cache mod.ts
 
-ENV ORGS="SKT-AIDevOps"
-ENV PROJECT="hera"
-ENV KEY="f6knfvhhjc57o54vbxvbceuki24zy5uuc2bdf47r656kq7ipbpra"
-ENV ENV_NAME="dev"
-
 CMD ["run", "--allow-run", "--allow-net", "--allow-env", "--cached-only", "mod.ts"]
