@@ -21,21 +21,19 @@ const parsed = await soxa.get(
 );
 
 parsed.data.value
-      .filter(
-        (val: any) => 
-          val.name.includes(`${env_name}`)
+  .filter((val: any) => val.name.includes(`${env_name}`))
+  .map(
+    (val: any) =>
+      `kubectl create configmap ${val.name.replace(
+        `-${env_name}`,
+        ""
+      )}${Object.entries(val.variables)
+        .map(
+          ([key, value]: [string, any]) =>
+            ` --from-literal=${key}=${value["value"]}`
         )
-      .map(
-        (val: any) => 
-          `kubectl create configmap ${val.name.replace(`-${env_name}`,"")}${Object.entries(
-            val.variables
-          ).map(
-            ([key, value]: [string, any]) =>
-              ` --from-literal=${key}=${value["value"]}`
-          )} -o yaml --dry-run=client | kubectl apply -f -`
-        )
-      .map(
-       async (val: string) => {
-          console.log(val)
-          console.log(await exec(val))
-        })
+        .join("")} -o yaml --dry-run=client`
+  )
+  .map(async (val: string) => {
+    console.log(await exec(`bash -c "${val} | kubectl apply -f -"`));
+  });
