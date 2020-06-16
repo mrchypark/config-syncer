@@ -1,17 +1,11 @@
 name: Publish Docker
 on: [push, release]
 jobs:
-  build:
+  job1:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: Publish to Registry
-      uses: HurricanKai/Publish-Docker-Github-Action@master
-      if: contains(github.ref, 'refs/tags/v')
-      with:
-        name: mrchypark/syncer
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        registry: docker.pkg.github.com
-        tagging: true
-        snapshot: true
+      - name: Build, Tag, Push
+        uses: mattdavis0351/actions/docker-gpr@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          image-name: syncer
