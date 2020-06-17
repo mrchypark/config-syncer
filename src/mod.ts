@@ -1,4 +1,5 @@
-import { exec, soxa, encode, cron, format } from "./deps.ts";
+import { exec, soxa, encode, cron } from "./deps.ts";
+import { format } from 'https://deno.land/x/date_fns/index.js';
 
 const orgs = Deno.env.get("ORGS");
 const proj = Deno.env.get("PROJECT");
@@ -17,7 +18,7 @@ const vg_config = {
 console.log("cron schedule : " + schedule)
 
 cron(schedule, async () => {
-  console.log("job Start: " + format(Date.now(), ))
+  console.log("job Start: " + format(Date.now(), "yyyy-MM-dd HH:mm:ssZZ"))
   let parsed = await soxa.get(
     `_apis/distributedtask/variablegroups?api-version=5.1-preview.1`,
     vg_config

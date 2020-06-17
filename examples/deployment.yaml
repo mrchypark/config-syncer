@@ -14,8 +14,8 @@ spec:
           image: mrchypark/syncer
           resources:
             requests:
-              memory: "8Mi"
+              memory: "12Mi"
               cpu: "100m"
             limits:
-              memory: "8Mi"
+              memory: "12Mi"
               cpu: "100m"
