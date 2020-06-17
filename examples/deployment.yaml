@@ -1,0 +1,21 @@
+apiVersion : apps/v1beta1
+kind: Deployment
+metadata:
+  name: syncer
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: syncer 
+    spec:
+      containers:
+        - name: syncer 
+          image: mrchypark/syncer
+          resources:
+            requests:
+              memory: "12Mi"
+              cpu: "100m"
+            limits:
+              memory: "12Mi"
+              cpu: "100m"
