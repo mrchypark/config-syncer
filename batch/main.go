@@ -70,7 +70,7 @@ func main() {
 				for k, v := range vg.Variables {
 					cmd += ` --from-literal=` + k + `=` + v.Value
 				}
-				cmd += `-o yaml --dry-run=client`
+				cmd += ` -o yaml --dry-run=client`
 				cmdAll = append(cmdAll, cmd)
 			}
 		}
