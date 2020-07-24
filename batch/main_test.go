@@ -35,3 +35,12 @@ func TestRegexSplit(t *testing.T) {
 	s := a.Split("tesA%test", -1)
 	t.Fatal(s)
 }
+
+func TestChk(t *testing.T) {
+	n := "tes-dev"
+	vg := Value{Name: &n}
+	assert.Equal(t, true, Chk("dev", vg), "they should be equal")
+	n = "tes-devt"
+	vg = Value{Name: &n}
+	assert.NotEqual(t, true, Chk("dev", vg), "they should be not equal")
+}
