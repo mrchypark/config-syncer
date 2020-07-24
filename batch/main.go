@@ -1,20 +1,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	b64 "encoding/base64"
 	"encoding/json"
 
 	"github.com/imroc/req"
-	"github.com/stephenafamo/kronika"
 	"github.com/subosito/gotenv"
 )
 
@@ -23,8 +19,6 @@ func init() {
 	gotenv.Apply(strings.NewReader("PROJECT=hera"))
 	// azure devops PAT key
 	gotenv.Apply(strings.NewReader("API_KEY="))
-	// second
-	gotenv.Apply(strings.NewReader(`INTERVAL=60`))
 	gotenv.Apply(strings.NewReader("ENV_NAMES=dev"))
 }
 
@@ -32,16 +26,6 @@ func main() {
 	version := "sycer-v0.0.1"
 
 	fmt.Println(version)
-	ctx := context.Background()
-
-	start, err := time.Parse(
-		"2006-01-02 15:04:05",
-		"2019-09-17 14:00:00",
-	)
-
-	if err != nil {
-		panic(err)
-	}
 
 	key := ":" + os.Getenv("API_KEY")
 	if key == ":" {
@@ -67,31 +51,39 @@ func main() {
 		"Authorization": "Basic " + key,
 	}
 
-	s, _ := strconv.Atoi(os.Getenv("INTERVAL"))
-	interval := time.Duration(s) * time.Second
-	for t := range kronika.Every(ctx, start, interval) {
-		fmt.Println(t.Format("2006-01-02 15:04:05"))
+	res, err := req.Get(tar, authHeader)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic("Request fail: get variable groups")
+	}
 
-		res, err := req.Get(tar, authHeader)
+	v := VG{}
+	res.ToJSON(&v)
+	cmdAll := []string{}
+
+	for _, vg := range v.Value {
+		for _, t := range envs {
+			if Chk(t, vg) {
+				re := regexp.MustCompile(`.` + t + `$`)
+				vn := re.ReplaceAllString(vg.Name, "")
+				cmd := "kubectl create configmap " + vn
+				for k, v := range vg.Variables {
+					cmd += ` --from-literal=` + k + `=` + v.Value
+				}
+				cmd += `-o yaml --dry-run=client`
+				cmdAll = append(cmdAll, cmd)
+			}
+		}
+	}
+	for _, v := range cmdAll {
+		fmt.Println(`/bin/bash` + ` -c "` + v + ` | kubectl apply -f -"`)
+		cmd := exec.Command(`/bin/bash`, `-c "`+v+` | kubectl apply -f -"`)
+		out, err := cmd.Output()
 		if err != nil {
-			fmt.Println("Request fail: get variable groups")
 			fmt.Println(err.Error())
 			continue
 		}
-
-		v := VG{}
-		res.ToJSON(&v)
-
-		// for _, vg := range v.Value {
-		// 	vg.Name
-		// }
-
-		lsCmd := exec.Command("ls", "-al")
-		lsOut, err := lsCmd.Output()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(string(lsOut))
+		fmt.Println(string(out))
 	}
 }
 
@@ -121,10 +113,18 @@ type VG struct {
 
 type Value struct {
 	Variables map[string]Key `json:"variables,omitempty"`
-	Name      *string        `json:"name,omitempty"`
+	Name      string         `json:"name,omitempty"`
 }
 
 type Key struct {
-	Value    *string `json:"value"`
-	IsSecret *bool   `json:"isSecret,omitempty"`
+	Value    string `json:"value"`
+	IsSecret bool   `json:"isSecret,omitempty"`
+}
+
+func Chk(envName string, vg Value) bool {
+	match, err := regexp.MatchString(`.`+envName+`$`, vg.Name)
+	if err != nil {
+		return false
+	}
+	return match
 }
