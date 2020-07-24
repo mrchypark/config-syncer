@@ -76,13 +76,16 @@ func main() {
 		}
 	}
 	for _, v := range cmdAll {
-		fmt.Println(`/bin/bash` + ` -c "` + v + ` | kubectl apply -f -"`)
-		cmd := exec.Command(`/bin/bash`, `-c "`+v+` | kubectl apply -f -"`)
+		cmd := exec.Command(`bash`, `-c`, v+` | kubectl apply -f -`)
 		out, err := cmd.Output()
+		fmt.Println("cmd")
+		fmt.Println(cmd.String())
 		if err != nil {
+			fmt.Println("error")
 			fmt.Println(err.Error())
 			continue
 		}
+		fmt.Println("output")
 		fmt.Println(string(out))
 	}
 }
