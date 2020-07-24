@@ -67,9 +67,6 @@ func main() {
 		"Authorization": "Basic " + key,
 	}
 
-	// b, _ := v.Marshal()
-	// fmt.Println(string(b))
-
 	s, _ := strconv.Atoi(os.Getenv("INTERVAL"))
 	interval := time.Duration(s) * time.Second
 	for t := range kronika.Every(ctx, start, interval) {
