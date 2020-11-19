@@ -1,86 +1,38 @@
-#-------------------------------------------------------------------------------------------------------------
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
-#-------------------------------------------------------------------------------------------------------------
+# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.148.1/containers/go/.devcontainer/base.Dockerfile
 
-FROM golang:1
+# [Choice] Go version: 1, 1.15, 1.14
+ARG VARIANT="1"
+FROM mcr.microsoft.com/vscode/devcontainers/go:0-${VARIANT}
 
-# This Dockerfile adds a non-root user with sudo access. Use the "remoteUser"
-# property in devcontainer.json to use it. On Linux, the container user's GID/UIDs
-# will be updated to match your local UID/GID (when using the dockerFile property).
-# See https://aka.ms/vscode-remote/containers/non-root-user for details.
-ARG USERNAME=vscode
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
+# [Option] Install Node.js
+ARG INSTALL_NODE="true"
+ARG NODE_VERSION="lts/*"
+RUN if [ "${INSTALL_NODE}" = "true" ]; then su vscode -c "source /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
 
-# Configure apt, install packages and tools
+RUN wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh || true
+
+ARG ENABLE_NONROOT_DOCKER="true"
+ARG SOURCE_SOCKET=/var/run/docker-host.sock
+ARG TARGET_SOCKET=/var/run/docker.sock
+ARG USERNAME="vscode"
+
+COPY library-scripts/*.sh /tmp/library-scripts/
 RUN apt-get update \
-    && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends apt-utils dialog 2>&1 \
-    #
-    # Verify git, process tools, lsb-release (common in install instructions for CLIs) installed
-    && apt-get -y install git openssh-client less iproute2 procps lsb-release \
-    #
-    # Build Go tools w/module support
-    && mkdir -p /tmp/gotools \
-    && cd /tmp/gotools \
-    && GOPATH=/tmp/gotools GO111MODULE=on go get -v golang.org/x/tools/gopls@latest 2>&1 \
-    && GOPATH=/tmp/gotools GO111MODULE=on go get -v \
-        honnef.co/go/tools/...@latest \
-        golang.org/x/tools/cmd/gorename@latest \
-        golang.org/x/tools/cmd/goimports@latest \
-        golang.org/x/tools/cmd/guru@latest \
-        golang.org/x/lint/golint@latest \
-        github.com/mdempsky/gocode@latest \
-        github.com/cweill/gotests/...@latest \
-        github.com/haya14busa/goplay/cmd/goplay@latest \
-        github.com/sqs/goreturns@latest \
-        github.com/josharian/impl@latest \
-        github.com/davidrjenni/reftools/cmd/fillstruct@latest \
-        github.com/uudashr/gopkgs/v2/cmd/gopkgs@latest  \
-        github.com/ramya-rao-a/go-outline@latest  \
-        github.com/acroca/go-symbols@latest  \
-        github.com/godoctor/godoctor@latest  \
-        github.com/rogpeppe/godef@latest  \
-        github.com/zmb3/gogetdoc@latest \
-        github.com/fatih/gomodifytags@latest  \
-        github.com/mgechev/revive@latest  \
-        github.com/go-delve/delve/cmd/dlv@latest 2>&1 \
-    #
-    # Build Go tools w/o module support
-    && GOPATH=/tmp/gotools go get -v github.com/alecthomas/gometalinter 2>&1 \
-    #
-    # Build gocode-gomod
-    && GOPATH=/tmp/gotools go get -x -d github.com/stamblerre/gocode 2>&1 \
-    && GOPATH=/tmp/gotools go build -o gocode-gomod github.com/stamblerre/gocode \
-    #
-    # Install Go tools
-    && mv /tmp/gotools/bin/* /usr/local/bin/ \
-    && mv gocode-gomod /usr/local/bin/ \
-    #
-    # Install golangci-lint
-    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin 2>&1 \
-    #
-    # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
-    && groupadd --gid $USER_GID $USERNAME \
-    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    # [Optional] Add sudo support
-    && apt-get install -y sudo \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME \
-    #
+    # Use Docker script from script library to set things up
+    && /bin/bash /tmp/library-scripts/docker-debian.sh "${ENABLE_NONROOT_DOCKER}" "${SOURCE_SOCKET}" "${TARGET_SOCKET}" "${USERNAME}" \
+    # Install Dapr
+    && wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash \
     # Clean up
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/* /tmp/gotools
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/library-scripts/
 
-RUN apt-get update \
-  && apt-get install -y curl ca-certificates --no-install-recommends \
-  && curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl \
-  && chmod +x ./kubectl \
-  && mv ./kubectl /usr/local/bin/kubectl \
-  && rm -rf /var/lib/apt/lists/*
+ENV PATH "$PATH:/home/${USERNAME}/.dapr/bin"
 
-# Update this to "on" or "off" as appropriate
-ENV GO111MODULE=auto
+RUN apt-get update && sudo apt-get install -y apt-transport-https gnupg2 curl \
+    && curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
+    && echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list \
+    && apt-get update \
+    && apt-get install -y kubectl \
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
+ENTRYPOINT [ "/usr/local/share/docker-init.sh" ]
+CMD [ "sleep", "infinity" ]

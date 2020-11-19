@@ -11,6 +11,14 @@ spec:
     metadata:
       labels:
         app: syncer
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "syncer"
+        dapr.io/app-protocol: "http"
+        dapr.io/app-port: "8080"
+        dapr.io/config: "tracing"
+        dapr.io/log-as-json: "true"
+        dapr.io/log-level: "debug"
     spec:
       serviceAccountName: syncer-sa
       containers:
@@ -18,3 +26,6 @@ spec:
           image: mrchypark/syncer
           ports:
           - containerPort: 8080
+          env:
+          - name: ADDRESS
+            value: ":8080"

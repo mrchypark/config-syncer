@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+    {
+      "appId": "syncer",
+      "appPort": 8080,
+      "label": "daprd-debug",
+      "type": "daprd",
+      "args": [
+        "--enable-profiling"
+      ]
+    },
+    {
+      "appId": "syncer",
+      "label": "daprd-down",
+      "type": "daprd-down"
+    }
+  ]
+}
